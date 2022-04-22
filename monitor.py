@@ -6,10 +6,11 @@ import io
 import smtplib
 import sys
 from smtp_config import user, sender, password, receivers, host, port
+import os
 
 
-DELAY = 60  # Delay between site queries
-EMAIL_INTERVAL = 1800  # Delay between alert emails
+DELAY = int(os.environ.get("DELAY", "60"))  # Delay between site queries
+EMAIL_INTERVAL = int(os.environ.get("EMAIL_INTERVAL", "1800"))  # Delay between alert emails
 
 last_email_time = {}  # Monitored sites and timestamp of last alert sent
 
@@ -69,8 +70,9 @@ def send_alert(site, status):
                              )
             last_email_time[site] = time()  # Update time of last email
             print(colorize("Successfully sent email", "green"))
-        except smtplib.SMTPException:
+        except Exception as e:
             print(colorize("Error sending email ({}:{})".format(host, port), "red"))
+            print(e)
 
 
 def ping(site):
