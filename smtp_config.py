@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-# Login email and password for account sending alerts
+# Sender email, smtp user and password for account sending alerts
 sender = "monitor@example.com"
+user = "exampleusername"
 password = "examplepassword"
 
 # Host and port for smtp server sending alerts

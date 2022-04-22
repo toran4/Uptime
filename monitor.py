@@ -5,7 +5,7 @@ import requests
 import io
 import smtplib
 import sys
-from smtp_config import sender, password, receivers, host, port
+from smtp_config import user, sender, password, receivers, host, port
 
 
 DELAY = 60  # Delay between site queries
@@ -58,7 +58,7 @@ def send_alert(site, status):
         try:
             smtpObj = smtplib.SMTP(host, port)  # Set up SMTP object
             smtpObj.starttls()
-            smtpObj.login(sender, password)
+            smtpObj.login(user, password)
             smtpObj.sendmail(sender,
                              receivers,
                              MESSAGE.format(sender=sender,
