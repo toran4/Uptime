@@ -1,4 +1,7 @@
 FROM python:3.10-slim-bullseye
-COPY *.py sites.txt /Uptime
+RUN pip install requests
 
+COPY *.py sites.txt /Uptime/
+
+WORKDIR /Uptime
 ENTRYPOINT ["python3", "/Uptime/monitor.py"]
