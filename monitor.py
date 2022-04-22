@@ -75,7 +75,13 @@ def send_alert(site, status):
 
 def ping(site):
     """Send GET request to input site and return status code"""
-    resp = requests.get(site)
+    try:
+        resp = requests.get(site)
+    except Exception as e:
+        print(colorize("Error pinging site {}".format(site), "red"))
+        print(e)
+        return -1 
+
     return resp.status_code
 
 
