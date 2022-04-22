@@ -4,7 +4,7 @@
 sender = "monitor@example.com"
 password = "examplepassword"
 
-# Mail domain and port for account sending alerts
+# Host and port for smtp server sending alerts
 host = "mail.example.com"
 port = 587
 
