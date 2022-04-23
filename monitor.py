@@ -11,8 +11,11 @@ import os
 
 DELAY = int(os.environ.get("DELAY", "60"))  # Delay between site queries
 EMAIL_INTERVAL = int(os.environ.get("EMAIL_INTERVAL", "1800"))  # Delay between alert emails
+DATA_FOLDER = os.environ.get("DATA_FOLDER", "./")  # Folder for the sites file and monitor log
 
 last_email_time = {}  # Monitored sites and timestamp of last alert sent
+monitor_log_path = os.path.join(DATA_FOLDER, "monitor.log")
+sites_file_path = os.path.join(DATA_FOLDER, "sites.txt")
 
 # Define escape sequences for colored terminal output
 COLOR_DICT = {
@@ -45,7 +48,7 @@ def error_log(site, status):
                                         colorize(status, "yellow"),
                                         ))
     # Log status message to log file
-    with open('monitor.log', 'a') as log:
+    with open(monitor_log_path, 'a') as log:
         log.write("({}) {} STATUS: {}\n".format(strftime("%a %b %d %Y %H:%M:%S"),
                                                 site,
                                                 status,
@@ -93,9 +96,9 @@ def get_sites():
 
     # Read in additional sites to monitor from sites.txt file
     try:
-        sites += [site.strip() for site in io.open('sites.txt', mode='r').readlines()]
+        sites += [site.strip() for site in io.open(sites_file_path, mode='r').readlines()]
     except IOError:
-        print(colorize("No sites.txt file found", "red"))
+        print(colorize("No {} file found".format(sites_file_path), "red"))
 
     # Add protocol if missing in URL
     for site in range(len(sites)):
