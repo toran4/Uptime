@@ -11,9 +11,11 @@ import os
 
 DELAY = int(os.environ.get("DELAY", "60"))  # Delay between site queries
 EMAIL_INTERVAL = int(os.environ.get("EMAIL_INTERVAL", "1800"))  # Delay between alert emails
+ALERT_COUNT_THRESHOLD = int(os.environ.get("ALERT_COUNT_THRESHOLD", "2")) # Number of required consecutive failures to alert
 DATA_FOLDER = os.environ.get("DATA_FOLDER", "./")  # Folder for the sites file and monitor log
 
 last_email_time = {}  # Monitored sites and timestamp of last alert sent
+current_error_count = {}
 monitor_log_path = os.path.join(DATA_FOLDER, "monitor.log")
 sites_file_path = os.path.join(DATA_FOLDER, "sites.txt")
 
@@ -27,11 +29,19 @@ COLOR_DICT = {
     }
 
 # Message template for alert
-MESSAGE = """From: {sender}
+ALERT_MESSAGE = """From: {sender}
 To: {receivers}
-Subject: Monitor Service Notification
+Subject: ALERT: Monitor Service Notification for {site}
 
 You are being notified that {site} is experiencing a {status} status!
+"""
+
+# Message template for alert resolved
+ALERT_RESOLVED_MESSAGE = """From: {sender}
+To: {receivers}
+Subject: RESOLVED: Monitor Service Notification for {site}
+
+You are being notified that {site} is responding as expected again!
 """
 
 
@@ -58,24 +68,35 @@ def error_log(site, status):
 
 def send_alert(site, status):
     """If more than EMAIL_INTERVAL seconds since last email, resend email"""
-    if (time() - last_email_time[site]) > EMAIL_INTERVAL:
-        try:
-            smtpObj = smtplib.SMTP(host, port)  # Set up SMTP object
-            smtpObj.starttls()
-            smtpObj.login(user, password)
-            smtpObj.sendmail(sender,
-                             receivers,
-                             MESSAGE.format(sender=sender,
+    if (time() - last_email_time[site]) > EMAIL_INTERVAL and current_error_count[site] >= ALERT_COUNT_THRESHOLD:
+        message = ALERT_MESSAGE.format(sender=sender,
                                             receivers=", ".join(receivers),
                                             site=site,
                                             status=status
                                             )
-                             )
+        mail_sent = send_email(message)
+        if mail_sent:
             last_email_time[site] = time()  # Update time of last email
-            print(colorize("Successfully sent email", "green"))
-        except Exception as e:
-            print(colorize("Error sending email ({}:{})".format(host, port), "red"))
-            print(e)
+
+def send_alert_resolved(site):
+    message = ALERT_RESOLVED_MESSAGE.format(sender=sender,
+                                            receivers=", ".join(receivers),
+                                            site=site
+                                            )
+    send_email(message)
+
+def send_email(message):
+    try:
+        smtpObj = smtplib.SMTP(host, port)  # Set up SMTP object
+        smtpObj.starttls()
+        smtpObj.login(user, password)
+        smtpObj.sendmail(sender, receivers, message)
+        print(colorize("Successfully sent email", "green"))
+        return True
+    except Exception as e:
+        print(colorize("Error sending email ({}:{})".format(host, port), "red"))
+        print(e)
+        return False
 
 
 def ping(site):
@@ -117,15 +138,21 @@ def main():
     for site in sites:
         print(colorize("Beginning monitoring of {}".format(site), "bold"))
         last_email_time[site] = 0  # Initialize timestamp as 0
+        current_error_count[site] = 0
 
     while sites:
         try:
             for site in sites:
                 status = ping(site)
                 if status == 200:
+                    if current_error_count[site] >= ALERT_COUNT_THRESHOLD:
+                        print(colorize("Current active alert for {} resolved".format(site), "green"))
+                        send_alert_resolved(site)
+                    current_error_count[site] = 0
                     print(colorize(".", "green"), end="")
                     sys.stdout.flush()
                 else:
+                    current_error_count[site] += 1
                     error_log(site, status)
                     send_alert(site, status)
             sleep(DELAY)
