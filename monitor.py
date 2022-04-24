@@ -4,6 +4,7 @@ from time import sleep, time, strftime
 import requests
 import io
 import smtplib
+import ssl
 import sys
 from smtp_config import user, sender, password, receivers, host, port
 import os
@@ -87,12 +88,12 @@ def send_alert_resolved(site):
 
 def send_email(message):
     try:
-        smtpObj = smtplib.SMTP(host, port)  # Set up SMTP object
-        smtpObj.starttls()
-        smtpObj.login(user, password)
-        smtpObj.sendmail(sender, receivers, message)
-        print(colorize("Successfully sent email", "green"))
-        return True
+        context = ssl.create_default_context()
+        with smtplib.SMTP_SSL(host=host, port=port, context=context) as server:
+            server.login(user, password)
+            server.sendmail(sender, receivers, message)
+            print(colorize("Successfully sent email", "green"))
+            return True
     except Exception as e:
         print(colorize("Error sending email ({}:{})".format(host, port), "red"))
         print(e)
