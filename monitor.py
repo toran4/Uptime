@@ -7,6 +7,8 @@ import smtplib
 import ssl
 import sys
 from smtp_config import user, sender, password, receivers, host, port
+from email.message import EmailMessage
+from email.utils import formatdate
 import os
 
 
@@ -30,21 +32,12 @@ COLOR_DICT = {
     }
 
 # Message template for alert
-ALERT_MESSAGE = """From: {sender}
-To: {receivers}
-Subject: ALERT: Monitor Service Notification for {site}
-
-You are being notified that {site} is experiencing a {status} status!
-"""
+ALERT_MESSAGE = "You are being notified that {site} is experiencing a {status} status!"
+ALERT_SUBJECT = "ALERT: Monitor Service Notification for {site}"
 
 # Message template for alert resolved
-ALERT_RESOLVED_MESSAGE = """From: {sender}
-To: {receivers}
-Subject: RESOLVED: Monitor Service Notification for {site}
-
-You are being notified that {site} is responding as expected again!
-"""
-
+ALERT_RESOLVED_MESSAGE = "You are being notified that {site} is responding as expected again!"
+ALERT_RESOLVED_SUBJECT = "RESOLVED: Monitor Service Notification for {site}"
 
 def colorize(text, color):
     """Return input text wrapped in ANSI color codes for input color."""
@@ -66,32 +59,36 @@ def error_log(site, status):
                                                 )
                   )
 
+def create_email_message(subject, body):
+    msg = EmailMessage()
+    msg['Subject'] = subject
+    msg['From'] = sender
+    msg['To'] = receivers
+    msg.add_header("Date", formatdate(localtime=True))
+    msg.set_content(body)
+    return msg
 
 def send_alert(site, status):
     """If more than EMAIL_INTERVAL seconds since last email, resend email"""
     if (time() - last_email_time[site]) > EMAIL_INTERVAL and current_error_count[site] >= ALERT_COUNT_THRESHOLD:
-        message = ALERT_MESSAGE.format(sender=sender,
-                                            receivers=", ".join(receivers),
-                                            site=site,
-                                            status=status
-                                            )
-        mail_sent = send_email(message)
+        body = ALERT_MESSAGE.format(site=site, status=status)
+        subject = ALERT_SUBJECT.format(site=site)
+        mail_sent = send_email(subject, body)
         if mail_sent:
             last_email_time[site] = time()  # Update time of last email
 
 def send_alert_resolved(site):
-    message = ALERT_RESOLVED_MESSAGE.format(sender=sender,
-                                            receivers=", ".join(receivers),
-                                            site=site
-                                            )
-    send_email(message)
+    body = ALERT_RESOLVED_MESSAGE.format(site=site)
+    subject = ALERT_RESOLVED_SUBJECT.format(site=site)
+    send_email(subject, body)
 
-def send_email(message):
+def send_email(subject, body):
+    message = create_email_message(subject, body)
     try:
         context = ssl.create_default_context()
         with smtplib.SMTP_SSL(host=host, port=port, context=context) as server:
             server.login(user, password)
-            server.sendmail(sender, receivers, message)
+            server.send_message(message)
             print(colorize("Successfully sent email", "green"))
             return True
     except Exception as e:
