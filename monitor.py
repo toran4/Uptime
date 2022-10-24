@@ -17,6 +17,8 @@ EMAIL_INTERVAL = int(os.environ.get("EMAIL_INTERVAL", "1800"))  # Delay between 
 ALERT_COUNT_THRESHOLD = int(os.environ.get("ALERT_COUNT_THRESHOLD", "2")) # Number of required consecutive failures to alert
 DATA_FOLDER = os.environ.get("DATA_FOLDER", "./")  # Folder for the sites file and monitor log
 
+HEADERS = {'User-Agent': 'Uptime monitor'}
+
 last_email_time = {}  # Monitored sites and timestamp of last alert sent
 current_error_count = {}
 monitor_log_path = os.path.join(DATA_FOLDER, "monitor.log")
@@ -100,7 +102,7 @@ def send_email(subject, body):
 def ping(site):
     """Send GET request to input site and return status code"""
     try:
-        resp = requests.get(site)
+        resp = requests.get(site, headers=HEADERS)
     except Exception as e:
         print(colorize("Error pinging site {}".format(site), "red"))
         print(e)
