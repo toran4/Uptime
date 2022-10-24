@@ -12,6 +12,8 @@ import os
 DELAY = int(os.environ.get("DELAY", "60"))  # Delay between site queries
 EMAIL_INTERVAL = int(os.environ.get("EMAIL_INTERVAL", "1800"))  # Delay between alert emails
 
+HEADERS = {'User-Agent': 'Uptime monitor'}
+
 last_email_time = {}  # Monitored sites and timestamp of last alert sent
 
 # Define escape sequences for colored terminal output
@@ -75,7 +77,7 @@ def send_alert(site, status):
             print(e)
 
 
-def ping(site):
+def ping(site, headers=HEADERS):
     """Send GET request to input site and return status code"""
     try:
         resp = requests.get(site)
