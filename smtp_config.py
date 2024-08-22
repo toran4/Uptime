@@ -13,9 +13,11 @@ password = os.environ.get("SMTP_PASSWORD", _password)
 # Host and port for smtp server sending alerts
 _host = "mail.example.com"
 _port = "465"
+_login = "True"
 
 host = os.environ.get("SMTP_HOST", _host)
 port = int(os.environ.get("SMTP_PORT", _port))
+login = os.environ.get("SMTP_LOGIN", _login) == "True"
 
 # Recipients that will get alert
 _receivers = "john.doe@gmail.com"

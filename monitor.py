@@ -6,7 +6,7 @@ import io
 import smtplib
 import ssl
 import sys
-from smtp_config import user, sender, password, receivers, host, port
+from smtp_config import user, sender, password, receivers, host, port, login
 from email.message import EmailMessage
 from email.utils import formatdate
 import os
@@ -87,9 +87,9 @@ def send_alert_resolved(site):
 def send_email(subject, body):
     message = create_email_message(subject, body)
     try:
-        context = ssl.create_default_context()
-        with smtplib.SMTP_SSL(host=host, port=port, context=context) as server:
-            server.login(user, password)
+        with __get_smtp_server() as server:
+            if login:
+                server.login(user, password)
             server.send_message(message)
             print(colorize("Successfully sent email", "green"))
             return True
@@ -98,6 +98,12 @@ def send_email(subject, body):
         print(e)
         return False
 
+def __get_smtp_server():
+    if login:
+        context = ssl.create_default_context()
+        return smtplib.SMTP_SSL(host=host, port=port, context=context)
+    else:
+        return smtplib.SMTP(host=host, port=port)
 
 def ping(site):
     """Send GET request to input site and return status code"""
